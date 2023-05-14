@@ -1,4 +1,8 @@
-# Logs
+MONGODB_PASSWORD=JQArqTl8PdTPKepS
+
+
+
+Logs
 logs
 *.log
 npm-debug.log*
