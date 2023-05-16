@@ -1,18 +1,12 @@
-import { Router } from "express";
-import {
-  addPost,
-  deletePost,
-  getAllPosts,
-  getPostById,
-  updatePost,
-} from "../controllers/post-controller";
+var express = require("express");
+var postController = require("../controllers/post-controller");
 
-const postRouter = Router();
+var postRouter = express.Router();
 
-postRouter.get("/", getAllPosts);
-postRouter.get("/:id", getPostById);
-postRouter.post("/", addPost);
-postRouter.put("/:id", updatePost);
-postRouter.delete("/:id", deletePost);
+postRouter.get("/", postController.getAllPosts);
+postRouter.get("/:id", postController.getPostById);
+postRouter.post("/", postController.addPost);
+postRouter.put("/:id", postController.updatePost);
+postRouter.delete("/:id", postController.deletePost);
 
-export default postRouter;
+module.exports = postRouter;
