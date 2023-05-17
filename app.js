@@ -1,9 +1,9 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import userRouter from "./routing/user-routes";
-import postRouter from "./routing/post-routes";
-import cors from "cors";
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const userRouter = require("./routing/user-routes");
+const postRouter = require("./routing/post-routes");
+const cors = require("cors");
 
 const app = express();
 dotenv.config();
@@ -18,16 +18,17 @@ app.use("/posts", postRouter);
 
 mongoose
   .connect(
-  
-    //mongodb+srv://admin:<password>@cluster0.53zievv.mongodb.net/?retryWrites=true&w=majority
-  
-   `mongodb+srv://admin:${process.env.MONGODB_PASSWORD}@cluster0.fkmrfth.mongodb.net/?retryWrites=true&w=majority`
-   
-  
+    "mongodb+srv://admin:" +
+      process.env.MONGODB_PASSWORD +
+      "@cluster0.fkmrfth.mongodb.net/?retryWrites=true&w=majority"
   )
-  .then(() =>
-    app.listen(5000, () =>
-      console.log("Connection Succesfull  & Listening to localhost Port 5000")
-    )
-  )
-  .catch((err) => console.log(err));
+  .then(function() {
+    app.listen(5000, function() {
+      console.log(
+        "Connection Successful & Listening to localhost Port 5000"
+      );
+    });
+  })
+  .catch(function(err) {
+    console.log(err);
+  });
