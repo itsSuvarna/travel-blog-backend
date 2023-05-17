@@ -1,6 +1,7 @@
-import mongoose, { model, Schema } from "mongoose";
+var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
-const userSchema = new Schema({
+var userSchema = new Schema({
   name: {
     type: String,
     required: true,
@@ -16,8 +17,6 @@ const userSchema = new Schema({
     minLength: 6,
   },
   posts: [{ type: mongoose.Types.ObjectId, ref: "Post" }],
-
 });
 
-export default model("User",userSchema);
-// users
+module.exports = mongoose.model("User", userSchema);
