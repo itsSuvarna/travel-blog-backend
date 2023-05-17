@@ -1,152 +1,201 @@
-import mongoose, { mongo, startSession } from "mongoose";
-import Post from "../models/Post";
-import User from "../models/User";
+var mongoose = require("mongoose");
+var Post = require("../models/Post");
+var User = require("../models/User");
 
-export const getAllPosts = async (req, res) => {
-  let posts;
-  try {
-    posts = await Post.find().populate("user");
-    //posts = await Post.find();
-  } catch (err) {
-    return console.log(err);
-  }
-
-  if (!posts) {
-    return res.status(500).json({ message: "Unexpected Error Occurred" });
-  }
-
-  return res.status(200).json({ posts });
+exports.getAllPosts = function (req, res) {
+  var posts;
+  Post.find()
+    .populate("user")
+    .exec(function (err, foundPosts) {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Unexpected Error Occurred" });
+      }
+      posts = foundPosts;
+      return res.status(200).json({ posts: posts });
+    });
 };
-export const addPost = async (req, res) => {
-  const { title, description, location, date, image, user } = req.body;
+
+exports.addPost = function (req, res) {
+  var title = req.body.title;
+  var description = req.body.description;
+  var location = req.body.location;
+  var date = req.body.date;
+  var image = req.body.image;
+  var user = req.body.user;
 
   if (
-    !title &&
-    title.trim() === "" &&
-    !description &&
-    description.trim() === "" &&
-    !location &&
-    location.trim() === "" &&
-    !date &&
-    !user &&
-    !image &&
+    !title ||
+    title.trim() === "" ||
+    !description ||
+    description.trim() === "" ||
+    !location ||
+    location.trim() === "" ||
+    !date ||
+    !user ||
+    !image ||
     image.trim() === ""
   ) {
     return res.status(422).json({ message: "Invalid Data" });
   }
 
-  let existingUser;
-  try {
-    existingUser = await User.findById(user);
-  } catch (err) {
-    return console.log(err);
-  }
+  User.findById(user, function (err, existingUser) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Unexpected Error Occurred" });
+    }
 
-  if (!existingUser) {
-    return res.status(404).json({ message: "User not found" });
-  }
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-  let post;
-
-  try {
-    post = new Post({
-      title,
-      description,
-      image,
-      location,
-      date: new Date(`${date}`),
-      user,
+    var post = new Post({
+      title: title,
+      description: description,
+      image: image,
+      location: location,
+      date: new Date(date),
+      user: user,
     });
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    existingUser.posts.push(post);
-    await existingUser.save({ session });
-    post = await post.save({ session });
-    session.commitTransaction();
-  } catch (err) {
-    return console.log(err);
-  }
-
-  if (!post) {
-    return res.status(500).json({ message: "Unexpected Error Occurred" });
-  }
-  return res.status(201).json({ post });
+    mongoose.startSession(function (err, session) {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ message: "Unexpected Error Occurred" });
+      }
+      session.startTransaction();
+      existingUser.posts.push(post);
+      existingUser.save({ session: session }, function (err) {
+        if (err) {
+          console.log(err);
+          session.abortTransaction();
+          session.endSession();
+          return res
+            .status(500)
+            .json({ message: "Unexpected Error Occurred" });
+        }
+        post.save({ session: session }, function (err, savedPost) {
+          if (err) {
+            console.log(err);
+            session.abortTransaction();
+            session.endSession();
+            return res
+              .status(500)
+              .json({ message: "Unexpected Error Occurred" });
+          }
+          session.commitTransaction();
+          session.endSession();
+          return res.status(201).json({ post: savedPost });
+        });
+      });
+    });
+  });
 };
 
-export const getPostById = async (req, res) => {
-  const id = req.params.id;
+exports.getPostById = function (req, res) {
+  var id = req.params.id;
 
-  let post;
-
-  try {
-    post = await Post.findById(id);
-  } catch (err) {
-    return console.log(err);
-  }
-  if (!post) {
-    return res.status(404).json({ message: "No post found" });
-  }
-  return res.status(200).json({ post });
+  Post.findById(id, function (err, post) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Unexpected Error Occurred" });
+    }
+    if (!post) {
+      return res.status(404).json({ message: "No post found" });
+    }
+    return res.status(200).json({ post: post });
+  });
 };
 
-export const updatePost = async (req, res) => {
-  const id = req.params.id;
-  const { title, description, location, image } = req.body;
+exports.updatePost = function (req, res) {
+  var id = req.params.id;
+  var title = req.body.title;
+  var description = req.body.description;
+  var location = req.body.location;
+  var image = req.body.image;
 
   if (
-    !title &&
-    title.trim() === "" &&
-    !description &&
-    description.trim() === "" &&
-    !location &&
-    location.trim() === "" &&
-    !image &&
+    !title ||
+    title.trim() === "" ||
+    !description ||
+    description.trim() === "" ||
+    !location ||
+    location.trim() === "" ||
+    !image ||
     image.trim() === ""
   ) {
     return res.status(422).json({ message: "Invalid Data" });
   }
 
-  let post;
-  try {
-    post = await Post.findByIdAndUpdate(id, {
-      title,
-      description,
-      image,
-      location,
-    });
-  } catch (err) {
-    return console.log(err);
-  }
+  var update = {
+    title: title,
+    description: description,
+    image: image,
+    location: location,
+  };
 
-  if (!post) {
-    return res.status(500).json({ message: "Unable to update" });
-  }
-  return res.status(200).json({ message: "Updated Successfully" });
+  Post.findByIdAndUpdate(id, update, function (err, post) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Unexpected Error Occurred" });
+    }
+    if (!post) {
+      return res.status(500).json({ message: "Unable to update" });
+    }
+    return res.status(200).json({ message: "Updated Successfully" });
+  });
 };
 
-export const deletePost = async (req, res) => {
-  const id = req.params.id;
-  let post;
-  try {
-    const session = await mongoose.startSession();
+exports.deletePost = function (req, res) {
+  var id = req.params.id;
+
+  mongoose.startSession(function (err, session) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Unexpected Error Occurred" });
+    }
     session.startTransaction();
-    post = await Post.findById(id).populate("user");
-    post.user.posts.pull(post);
-    await post.user.save({ session });
-    post = await Post.findByIdAndRemove(id);
-    session.commitTransaction();
-  } catch (err) {
-    return console.log(err);
-  }
-  if (!post) {
-    return res.status(500).json({ message: "Unable to delete" });
-  }
-
-  return res.status(200).json({ message: "Deleted Successfully" });
+    Post.findById(id)
+      .populate("user")
+      .exec(function (err, post) {
+        if (err) {
+          console.log(err);
+          session.abortTransaction();
+          session.endSession();
+          return res
+            .status(500)
+            .json({ message: "Unexpected Error Occurred" });
+        }
+        if (!post) {
+          session.abortTransaction();
+          session.endSession();
+          return res.status(500).json({ message: "Unable to delete" });
+        }
+        var user = post.user;
+        user.posts.pull(post);
+        user.save({ session: session }, function (err) {
+          if (err) {
+            console.log(err);
+            session.abortTransaction();
+            session.endSession();
+            return res
+              .status(500)
+              .json({ message: "Unexpected Error Occurred" });
+          }
+          Post.findByIdAndRemove(id, function (err) {
+            if (err) {
+              console.log(err);
+              session.abortTransaction();
+              session.endSession();
+              return res
+                .status(500)
+                .json({ message: "Unexpected Error Occurred" });
+            }
+            session.commitTransaction();
+            session.endSession();
+            return res.status(200).json({ message: "Deleted Successfully" });
+          });
+        });
+      });
+  });
 };
-
-
-
-
-
