@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+var mongoose = require("mongoose");
 
-const postSchema = new mongoose.Schema({
+var postSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
@@ -27,11 +27,10 @@ const postSchema = new mongoose.Schema({
   //   required: true,
   // },
   user: {
-    type:String,
-  
+    type: String,
     required: true,
   },
-
 });
 
-export default mongoose.model("Post", postSchema);
+module.exports = mongoose.model("Post", postSchema);
+
